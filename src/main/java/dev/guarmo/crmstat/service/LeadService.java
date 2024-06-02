@@ -40,24 +40,26 @@ public class LeadService {
 
     public Lead saveModel(Lead lead) {
         Optional<Lead> gotLeadById = leadRepository.findById(lead.getId());
+        Project projectFromLead = projectRepository.findById(lead.getProject().getId()).orElseThrow();
 
         if (gotLeadById.isEmpty()) {
-            Project projectFromLead = projectRepository.findById(lead.getProject().getId()).orElseThrow();
             if (lead.getIsSubscribed()) {
                 projectFromLead.setSubs(projectFromLead.getSubs() + 1);
             } else {
                 projectFromLead.setUnsubs(projectFromLead.getUnsubs() + 1);
             }
         } else {
-            Project project = projectRepository.findById(lead.getProject().getId()).orElseThrow();
             if (lead.getIsSubscribed() && !gotLeadById.get().getIsSubscribed()) {
-                project.setSubs(project.getSubs() + 1);
+                projectFromLead.setSubs(projectFromLead.getSubs() + 1);
             } else if (!lead.getIsSubscribed() && gotLeadById.get().getIsSubscribed()) {
-                project.setUnsubs(project.getUnsubs() + 1);
+                projectFromLead.setUnsubs(projectFromLead.getUnsubs() + 1);
             }
         }
-
-        return leadRepository.save(lead);
+        Project savedProj = projectRepository.save(projectFromLead);
+        Lead savedLead = leadRepository.save(lead);
+        log.info("Lead saved: {}", savedLead);
+        log.info("Project subs count updated: {}", savedProj);
+        return savedLead;
     }
 
     public Lead save(PostLeadDto lead) {
