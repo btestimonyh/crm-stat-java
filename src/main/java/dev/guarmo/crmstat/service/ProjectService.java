@@ -10,8 +10,11 @@ import dev.guarmo.crmstat.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +25,8 @@ public class ProjectService {
     private final GetProjectDtoMapper getMapper;
     private final ProjectAfterInitializationService projectAfterInitializationService;
 
-    public GetProjectDto findById(Long id) {
-       return projectAfterInitializationService.finishInitializingGetProjectDto(id);
+    public GetProjectDto findById(Long id, Integer gmtShift) {
+       return projectAfterInitializationService.finishInitializingGetProjectDto(id, gmtShift);
     }
 
     public Project saveProject(PostProjectDto projectDto) {
@@ -31,7 +34,20 @@ public class ProjectService {
         return projectRepository.save(model);
     }
 
-    public List<GetProjectDto> findAll() {
-        return projectAfterInitializationService.findAllGetProjectDto();
+    public List<GetProjectDto> findAll(Integer gmtShift) {
+        return projectAfterInitializationService.findAllGetProjectDto(gmtShift);
+    }
+
+    public Project patchProject(Long id, Map<String, Object> fields) {
+        Project existingProject = projectRepository.findById(id).orElseThrow();
+        fields.forEach((key, value) -> {
+            Field field = ReflectionUtils.findField(Project.class, key);
+            field.setAccessible(true);
+            ReflectionUtils.setField(field, existingProject, value);
+        });
+
+        Project saved = projectRepository.save(existingProject);
+        log.info("Edited project with PATCH: {}", saved);
+        return saved;
     }
 }

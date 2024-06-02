@@ -11,12 +11,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@Table(name = "projects")
 public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private String subs;
+    private Long subs;
+    private Long unsubs;
     private String ftd;
     private String rd;
     private String pixelId;

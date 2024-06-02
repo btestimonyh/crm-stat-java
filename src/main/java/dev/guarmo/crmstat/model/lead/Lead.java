@@ -7,10 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@Table(name = "leads")
 public class Lead {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY )
@@ -24,11 +28,13 @@ public class Lead {
     private String status;
     private Boolean isFtd;
     private SubStatus subStatus;
+    private Boolean isSubscribed;
     private String rdCount;
     private String fbStatus;
     private String ftdAmount;
+    private String ftdTime;
     private String rdAmount;
-    private String regDate;
+    private LocalDateTime regDate;
     private String clickDate;
     private String sub1;
     private String sub2;

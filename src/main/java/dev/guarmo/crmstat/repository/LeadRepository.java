@@ -9,4 +9,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Lead> getLeadsByProject_Id(Long projectId);
 
     Lead findFirstByTgid(String tgIdOfLead);
+
+    List<Lead> findAllByProject_IdAndIsSubscribed(Long projectId, Boolean isSubscribed);
 }

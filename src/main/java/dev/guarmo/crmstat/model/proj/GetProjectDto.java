@@ -1,5 +1,6 @@
 package dev.guarmo.crmstat.model.proj;
 
+import dev.guarmo.crmstat.model.lead.GetLeadDto;
 import dev.guarmo.crmstat.model.lead.Lead;
 import lombok.Data;
 import lombok.Getter;
@@ -17,5 +18,5 @@ public class GetProjectDto {
     private String rd;
     private String pixelId;
     private String buyerId;
-    private List<Lead> leads;
+    private List<GetLeadDto> leads;
 }

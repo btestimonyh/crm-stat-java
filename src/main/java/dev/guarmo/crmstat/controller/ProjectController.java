@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,13 +41,20 @@ public class ProjectController {
 
     @PreAuthorize("hasRole('ROLE_BUYER') || hasRole('ROLE_OWNER') || hasRole('ROLE_ADMIN')")
     @GetMapping
-    public List<GetProjectDto> getAllProjects() {
-        return projectService.findAll();
+    public List<GetProjectDto> getAllProjects(@RequestParam Integer gmtShift) {
+        return projectService.findAll(gmtShift);
     }
 
     @PreAuthorize("hasRole('ROLE_BUYER') || hasRole('ROLE_OWNER') || hasRole('ROLE_ADMIN')")
     @GetMapping("/{projectId}")
-    public GetProjectDto getProjectById(@PathVariable Long projectId) {
-        return projectService.findById(projectId);
+    public GetProjectDto getProjectById(@PathVariable Long projectId, @RequestParam Integer gmtShift) {
+        return projectService.findById(projectId, gmtShift);
+    }
+
+    @PreAuthorize("hasRole('ROLE_BOT') || hasRole('ROLE_OWNER') || hasRole('ROLE_ADMIN')")
+    @PatchMapping("/{projectId}")
+    public Project patchProject(@PathVariable Long projectId, @RequestBody Map<String, Object> fields) {
+        log.info("Patch by ID: {} FIELDS: {}", projectId, fields);
+        return projectService.patchProject(projectId, fields);
     }
 }

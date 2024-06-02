@@ -18,6 +18,7 @@ public class PostLeadDto {
     private Boolean isFtd;
     private String rdCount;
     private String fbStatus;
+    private String ftdTime;
     private String sub1;
     private String sub2;
     private String sub3;

@@ -1,19 +1,21 @@
 package dev.guarmo.crmstat.service;
 
+import dev.guarmo.crmstat.mapper.GetLeadDtoMapper;
 import dev.guarmo.crmstat.mapper.PostLeadDtoMapper;
+import dev.guarmo.crmstat.model.lead.GetLeadDto;
 import dev.guarmo.crmstat.model.lead.Lead;
 import dev.guarmo.crmstat.model.lead.PostLeadDto;
+import dev.guarmo.crmstat.model.proj.Project;
 import dev.guarmo.crmstat.repository.LeadRepository;
+import dev.guarmo.crmstat.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.el.util.ReflectionUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.web.bind.annotation.RequestBody;
-
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -21,7 +23,9 @@ import java.util.Map;
 public class LeadService {
     private final LeadRepository leadRepository;
     private final PostLeadDtoMapper mapper;
-    private final GetClassFieldsService getClassFieldsService;
+    private final DateService dateService;
+    private final GetLeadDtoMapper getLeadDtoMapper;
+    private final ProjectRepository projectRepository;
 
     public List<Lead> findAll() {
         return leadRepository.findAll();
@@ -30,31 +34,52 @@ public class LeadService {
     public Lead findById(Long id) {
         return leadRepository.findById(id).orElseGet(() -> {
             log.error("Lead is NOT FOUND with token: {} ", id);
-            return null;}
-        );
+            return null;
+        });
+    }
+
+    public Lead saveModel(Lead lead) {
+        Optional<Lead> gotLeadById = leadRepository.findById(lead.getId());
+
+        if (gotLeadById.isEmpty()) {
+            Project projectFromLead = projectRepository.findById(lead.getProject().getId()).orElseThrow();
+            if (lead.getIsSubscribed()) {
+                projectFromLead.setSubs(projectFromLead.getSubs() + 1);
+            } else {
+                projectFromLead.setUnsubs(projectFromLead.getUnsubs() + 1);
+            }
+        } else {
+            Project project = projectRepository.findById(lead.getProject().getId()).orElseThrow();
+            if (lead.getIsSubscribed() && !gotLeadById.get().getIsSubscribed()) {
+                project.setSubs(project.getSubs() + 1);
+            } else if (!lead.getIsSubscribed() && gotLeadById.get().getIsSubscribed()) {
+                project.setUnsubs(project.getUnsubs() + 1);
+            }
+        }
+
+        return leadRepository.save(lead);
     }
 
     public Lead save(PostLeadDto lead) {
         Lead model = mapper.toModel(lead);
-        return leadRepository.save(model);
+        return saveModel(model);
     }
 
     public Lead update(PostLeadDto updatedLead, Long updatedLeadId) {
         Lead model = mapper.toModel(updatedLead);
         model.setId(updatedLeadId);
-        return leadRepository.save(model);
+        return saveModel(model);
     }
 
-    public List<Lead> findAllByProjectId(Long id) {
+    public List<GetLeadDto> findAllByProjectId(Long id, Integer gmtShift) {
         List<Lead> leadsByProjectId = leadRepository.getLeadsByProject_Id(id);
         log.info("Lead list is {}", leadsByProjectId);
-        leadsByProjectId.forEach(lead -> {
-            String[] dates = lead.getRegDate().split(" ")[0].split("-");
-            String finalData = dates[2] + "." + dates[1] + "." + dates[0];
-            lead.setRegDate(finalData);
-        });
-        log.info("Lead list with UPD date {}", leadsByProjectId);
-        return leadsByProjectId;
+
+        leadsByProjectId.forEach(lead -> lead.setRegDate(lead.getRegDate().plusHours(gmtShift)));
+        List<GetLeadDto> getLeadDtoStream = leadsByProjectId.stream().map(getLeadDtoMapper::toDto).toList();
+
+        log.info("Get Lead Dto list with synchronized date {}", getLeadDtoStream);
+        return getLeadDtoStream;
     }
 
     public Lead findLeadByTgId(String tgIdOfLead) {
@@ -69,7 +94,7 @@ public class LeadService {
             ReflectionUtils.setField(field, existingLead, value);
         });
 
-        Lead saved = leadRepository.save(existingLead);
+        Lead saved = saveModel(existingLead);
         log.info("Edited with PATCH: {}", saved);
         return saved;
     }
